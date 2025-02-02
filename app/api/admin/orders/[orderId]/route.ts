@@ -3,15 +3,15 @@ import { connectToDatabase } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 
 export async function PATCH(
-    req: Request,
-    { params }: { params: { orderId: string } }
+    req: Request
 ) {
     try {
         const { status } = await req.json();
+        const orderId = req.url.split('/').pop();
         const { db } = await connectToDatabase();
 
         const result = await db.collection('orders').updateOne(
-            { _id: new ObjectId(params.orderId) },
+            { _id: new ObjectId(orderId) },
             { $set: { status, updatedAt: new Date() } }
         );
 
