@@ -3,13 +3,14 @@ import { connectToDatabase } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 
 export async function GET(
-    req: Request,
-    { params }: { params: { id: string } }
+    request: Request
 ) {
     try {
+        const id = request.url.split('/').pop();
         const { db } = await connectToDatabase();
+        
         const product = await db.collection('products').findOne({
-            _id: new ObjectId(params.id)
+            _id: new ObjectId(id)
         });
 
         if (!product) {

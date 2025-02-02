@@ -2,12 +2,39 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 
+type OrderFromDB = {
+    _id: ObjectId;
+    orderNumber: string;
+    userId: ObjectId;
+    user: {
+        firstName: string;
+        lastName: string;
+        email: string;
+    };
+    items: Array<{
+        id: string;
+        name: string;
+        price: number;
+        quantity: number;
+        image: string;
+    }>;
+    shippingDetails: {
+        address1: string;
+        address2?: string;
+        city: string;
+        postcode: string;
+    };
+    totalAmount: number;
+    status: string;
+    createdAt: Date;
+};
+
 export async function GET() {
     try {
         const { db } = await connectToDatabase();
         
         // Fetch orders with user details
-        const orders = await db.collection('orders').aggregate([
+        const orders: OrderFromDB[] = await db.collection('orders').aggregate([
             {
                 $lookup: {
                     from: 'users',
@@ -24,7 +51,7 @@ export async function GET() {
             }
         ]).toArray();
 
-        const formattedOrders = orders.map(order => ({
+        const formattedOrders = orders.map((order: OrderFromDB) => ({
             _id: order._id.toString(),
             orderNumber: order.orderNumber,
             userId: order.userId.toString(),
