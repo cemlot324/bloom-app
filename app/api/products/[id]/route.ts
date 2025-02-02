@@ -2,16 +2,27 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 
+type Product = {
+    _id: ObjectId;
+    name: string;
+    description: string;
+    price: number;
+    category: string;
+    images: string[];
+    sku: string;
+    createdAt: Date;
+};
+
 export async function GET(
-    request: Request
+    request: Request,
+    { params }: { params: { id: string } }
 ) {
     try {
-        const id = request.url.split('/').pop();
         const { db } = await connectToDatabase();
         
         const product = await db.collection('products').findOne({
-            _id: new ObjectId(id)
-        });
+            _id: new ObjectId(params.id)
+        }) as Product | null;
 
         if (!product) {
             return NextResponse.json(
@@ -20,7 +31,12 @@ export async function GET(
             );
         }
 
-        return NextResponse.json({ product });
+        return NextResponse.json({ 
+            product: {
+                ...product,
+                _id: product._id.toString()
+            }
+        });
     } catch (error) {
         console.error('Error fetching product:', error);
         return NextResponse.json(

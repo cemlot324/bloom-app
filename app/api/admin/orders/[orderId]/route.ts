@@ -2,16 +2,18 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 
+type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+
 export async function PATCH(
-    req: Request
+    req: Request,
+    { params }: { params: { orderId: string } }
 ) {
     try {
-        const { status } = await req.json();
-        const orderId = req.url.split('/').pop();
+        const { status } = await req.json() as { status: OrderStatus };
         const { db } = await connectToDatabase();
 
         const result = await db.collection('orders').updateOne(
-            { _id: new ObjectId(orderId) },
+            { _id: new ObjectId(params.orderId) },
             { $set: { status, updatedAt: new Date() } }
         );
 

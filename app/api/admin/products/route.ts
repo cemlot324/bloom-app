@@ -2,7 +2,18 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 
-export async function GET(req: Request) {
+type Product = {
+    _id: ObjectId;
+    name: string;
+    description: string;
+    price: number;
+    category: string;
+    images: string[];
+    sku: string;
+    createdAt: Date;
+};
+
+export async function GET() {
     try {
         const { db } = await connectToDatabase();
         const products = await db.collection('products').find({}).toArray();
@@ -18,15 +29,9 @@ export async function POST(req: Request) {
         const { db } = await connectToDatabase();
         const product = await req.json();
 
-        // Add SKU if not provided
         if (!product.sku) {
             const count = await db.collection('products').countDocuments();
             product.sku = `BLM${(count + 1).toString().padStart(5, '0')}`;
-        }
-
-        // Validate images array
-        if (!product.images || !Array.isArray(product.images)) {
-            product.images = [];
         }
 
         product.createdAt = new Date();
@@ -45,11 +50,6 @@ export async function PUT(req: Request) {
     try {
         const { db } = await connectToDatabase();
         const { productId, updates } = await req.json();
-        
-        // Validate images array
-        if (updates.images && !Array.isArray(updates.images)) {
-            updates.images = [];
-        }
 
         await db.collection('products').updateOne(
             { _id: new ObjectId(productId) },
@@ -68,7 +68,9 @@ export async function DELETE(req: Request) {
         const { db } = await connectToDatabase();
         const { productId } = await req.json();
         
-        await db.collection('products').deleteOne({ _id: new ObjectId(productId) });
+        await db.collection('products').deleteOne({ 
+            _id: new ObjectId(productId) 
+        });
         
         return NextResponse.json({ message: 'Product deleted successfully' });
     } catch (error) {

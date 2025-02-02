@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
+import { ObjectId } from 'mongodb';
 
 type Order = {
+    _id: ObjectId;
     totalAmount: number;
-    createdAt: string;
-    status: string;
     orderNumber: string;
+    createdAt: Date;
+    status: string;
     user?: {
         firstName: string;
         lastName: string;
@@ -13,27 +15,25 @@ type Order = {
 };
 
 type TopProduct = {
+    _id: string;
     name: string;
-    sales: number;
-    revenue: number;
+    totalSales: number;
+    totalRevenue: number;
 };
 
 export async function GET() {
     try {
         const { db } = await connectToDatabase();
 
-        // Get total orders and revenue
         const orders: Order[] = await db.collection('orders').find().toArray();
         const totalOrders = orders.length;
-        const totalRevenue = orders.reduce((sum: number, order: Order) => sum + (order.totalAmount || 0), 0);
+        const totalRevenue = orders.reduce((sum: number, order: Order) => 
+            sum + (order.totalAmount || 0), 0
+        );
 
-        // Get total products
         const totalProducts = await db.collection('products').countDocuments();
-
-        // Get total customers
         const totalCustomers = await db.collection('users').countDocuments();
 
-        // Get recent orders with user details
         const recentOrders = await db.collection('orders')
             .aggregate([
                 { $sort: { createdAt: -1 } },
@@ -49,8 +49,7 @@ export async function GET() {
                 { $unwind: '$user' }
             ]).toArray();
 
-        // Get top selling products
-        const topProducts = await db.collection('orders').aggregate([
+        const topProducts = await db.collection('orders').aggregate<TopProduct>([
             { $unwind: '$items' },
             {
                 $group: {
@@ -76,12 +75,14 @@ export async function GET() {
                 date: order.createdAt,
                 status: order.status,
                 amount: order.totalAmount,
-                customerName: order.user ? `${order.user.firstName} ${order.user.lastName}` : 'Unknown'
+                customerName: order.user 
+                    ? `${order.user.firstName} ${order.user.lastName}` 
+                    : 'Unknown'
             })),
             topProducts: topProducts.map((product: TopProduct) => ({
                 name: product.name,
-                sales: product.sales,
-                revenue: product.revenue
+                sales: product.totalSales,
+                revenue: product.totalRevenue
             }))
         });
     } catch (error) {

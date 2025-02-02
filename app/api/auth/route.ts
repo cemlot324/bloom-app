@@ -1,84 +1,81 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import bcrypt from 'bcryptjs';
+import { ObjectId } from 'mongodb';
+
+type RegisterData = {
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+    address1: string;
+    address2?: string;
+    city: string;
+    postcode: string;
+    phone: string;
+};
+
+type LoginData = {
+    email: string;
+    password: string;
+};
+
+type AuthAction = {
+    action: 'login' | 'register';
+} & (
+    | { action: 'login'; } & LoginData
+    | { action: 'register'; } & RegisterData
+);
 
 export async function POST(req: Request) {
     try {
-        const body = await req.json();
-        const { action } = body;
+        const body = await req.json() as AuthAction;
         const { db } = await connectToDatabase();
 
-        if (action === 'login') {
-            const { email, password } = body;
-            const user = await db.collection('users').findOne({ email });
+        if (body.action === 'login') {
+            const user = await db.collection('users').findOne({ email: body.email });
             
             if (!user) {
                 return NextResponse.json({ error: 'User not found' }, { status: 404 });
             }
 
-            const isValid = await bcrypt.compare(password, user.password);
+            const isValid = await bcrypt.compare(body.password, user.password);
             
             if (!isValid) {
                 return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
             }
 
-            // Remove password from response
             const { password: _, ...userWithoutPassword } = user;
 
             return NextResponse.json({
                 user: {
-                    id: user._id,
+                    id: user._id.toString(),
                     ...userWithoutPassword
                 }
             });
         }
 
-        if (action === 'register') {
-            const { 
-                email, 
-                password,
-                firstName,
-                lastName,
-                address1,
-                address2,
-                city,
-                postcode,
-                phone
-            } = body;
-
-            // Check if user exists
-            const existingUser = await db.collection('users').findOne({ email });
+        if (body.action === 'register') {
+            const existingUser = await db.collection('users').findOne({ email: body.email });
             
             if (existingUser) {
                 return NextResponse.json({ error: 'Email already exists' }, { status: 400 });
             }
 
-            // Hash password
-            const hashedPassword = await bcrypt.hash(password, 10);
+            const hashedPassword = await bcrypt.hash(body.password, 10);
 
-            // Create user object
             const userToInsert = {
-                email,
+                ...body,
                 password: hashedPassword,
-                firstName,
-                lastName,
-                address1,
-                address2,
-                city,
-                postcode,
-                phone,
                 createdAt: new Date()
             };
 
-            // Insert user
             const result = await db.collection('users').insertOne(userToInsert);
-
-            // Remove password from response
             const { password: _, ...userWithoutPassword } = userToInsert;
 
             return NextResponse.json({
                 user: {
-                    id: result.insertedId,
+                    id: result.insertedId.toString(),
                     ...userWithoutPassword
                 }
             });

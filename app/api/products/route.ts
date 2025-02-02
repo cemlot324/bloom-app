@@ -1,6 +1,17 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 
+type Product = {
+    _id: string;
+    name: string;
+    description: string;
+    price: number;
+    category: string;
+    images: string[];
+    sku: string;
+    createdAt: Date;
+};
+
 export async function GET() {
     try {
         const { db } = await connectToDatabase();
@@ -11,15 +22,16 @@ export async function GET() {
             .sort({ createdAt: -1 })
             .toArray();
 
-        if (!products) {
-            return NextResponse.json({ products: [] });
-        }
-
-        return NextResponse.json({ products });
+        return NextResponse.json({ 
+            products: products.map((product: Product) => ({
+                ...product,
+                _id: product._id.toString()
+            }))
+        });
     } catch (error) {
         console.error('Error fetching products:', error);
         return NextResponse.json(
-            { error: 'Failed to fetch products', details: error }, 
+            { error: 'Failed to fetch products' }, 
             { status: 500 }
         );
     }

@@ -2,28 +2,26 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 
+type OrderUser = {
+    firstName: string;
+    lastName: string;
+    email: string;
+};
+
+type OrderItem = {
+    id: string;
+    name: string;
+    price: number;
+    quantity: number;
+    image: string;
+};
+
 type OrderFromDB = {
     _id: ObjectId;
     orderNumber: string;
     userId: ObjectId;
-    user: {
-        firstName: string;
-        lastName: string;
-        email: string;
-    };
-    items: Array<{
-        id: string;
-        name: string;
-        price: number;
-        quantity: number;
-        image: string;
-    }>;
-    shippingDetails: {
-        address1: string;
-        address2?: string;
-        city: string;
-        postcode: string;
-    };
+    user: OrderUser;
+    items: OrderItem[];
     totalAmount: number;
     status: string;
     createdAt: Date;
@@ -33,7 +31,6 @@ export async function GET() {
     try {
         const { db } = await connectToDatabase();
         
-        // Fetch orders with user details
         const orders: OrderFromDB[] = await db.collection('orders').aggregate([
             {
                 $lookup: {
@@ -43,12 +40,8 @@ export async function GET() {
                     as: 'user'
                 }
             },
-            {
-                $unwind: '$user'
-            },
-            {
-                $sort: { createdAt: -1 }
-            }
+            { $unwind: '$user' },
+            { $sort: { createdAt: -1 } }
         ]).toArray();
 
         const formattedOrders = orders.map((order: OrderFromDB) => ({
@@ -61,7 +54,6 @@ export async function GET() {
                 email: order.user.email
             },
             items: order.items,
-            shippingDetails: order.shippingDetails,
             totalAmount: order.totalAmount,
             status: order.status,
             createdAt: order.createdAt
