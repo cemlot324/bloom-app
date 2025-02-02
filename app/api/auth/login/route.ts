@@ -21,20 +21,8 @@ export async function POST(req: Request) {
         // Remove sensitive data
         const { password: _, ...userWithoutPassword } = user;
 
-        // Set the cookie with the user data
-        cookies().set({
-            name: 'user',
-            value: JSON.stringify({
-                id: user._id.toString(),
-                ...userWithoutPassword
-            }),
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            path: '/'
-        });
-
-        return NextResponse.json({
+        // Create the response
+        const response = NextResponse.json({
             user: {
                 id: user._id.toString(),
                 email: user.email,
@@ -47,6 +35,21 @@ export async function POST(req: Request) {
                 phone: user.phone
             }
         });
+
+        // Set the cookie
+        response.cookies.set({
+            name: 'user',
+            value: JSON.stringify({
+                id: user._id.toString(),
+                ...userWithoutPassword
+            }),
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            path: '/'
+        });
+
+        return response;
     } catch (error) {
         console.error('Login error:', error);
         return NextResponse.json({ error: 'Failed to login' }, { status: 500 });
