@@ -1,22 +1,16 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 
-interface RouteSegment {
-  params: {
-    id: string;
-  };
-}
-
 export async function DELETE(
-    _request: Request,
-    context: RouteSegment
-) {
+    request: NextRequest,
+    { params }: { params: { id: string } }
+): Promise<NextResponse> {
     try {
         const { db } = await connectToDatabase();
         
         const result = await db.collection('blog_posts').deleteOne({
-            _id: new ObjectId(context.params.id)
+            _id: new ObjectId(params.id)
         });
 
         if (result.deletedCount === 0) {
