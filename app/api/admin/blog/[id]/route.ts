@@ -18,7 +18,7 @@ export async function DELETE(
         }
 
         return new NextResponse('Deleted', { status: 200 });
-    } catch (error) {
+    } catch {
         return new NextResponse('Error', { status: 500 });
     }
 } 
