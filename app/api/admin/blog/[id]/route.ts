@@ -1,11 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 
+type Params = {
+    params: {
+        id: string;
+    };
+};
+
 export async function DELETE(
-    request: NextRequest,
-    { params }: { params: { id: string } }
-): Promise<NextResponse> {
+    _req: Request,
+    { params }: Params
+) {
     try {
         const { db } = await connectToDatabase();
         
