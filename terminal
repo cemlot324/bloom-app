@@ -1,0 +1,21 @@
+# 1. Install Git LFS
+brew install git-lfs
+
+# 2. Initialize Git LFS
+git lfs install
+
+# 3. Track large files (for example, images, binaries, etc.)
+git lfs track "*.png"
+git lfs track "*.jpg"
+git lfs track "*.jpeg"
+git lfs track "*.gif"
+
+# 4. Add .gitattributes to track these patterns
+git add .gitattributes
+
+# 5. Now you can add and commit your files normally
+git add .
+git commit -m "Added large files with Git LFS"
+
+# 6. Push to your repository
+git push origin main 
